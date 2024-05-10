@@ -1,10 +1,12 @@
 use crate::bencode::Value;
+use sha1::{Digest, Sha1};
 use std::{error, fmt};
 
 #[derive(Debug)]
 pub struct Torrent {
     pub announce: String,
     pub info: Info,
+    pub info_hash: Vec<u8>,
 }
 
 #[derive(Debug)]
@@ -45,11 +47,13 @@ impl<'a> TryFrom<Value<'a>> for Torrent {
         };
 
         let info = Info::try_from(info_value)?;
+        let info_hash = compute_hash(&info_value.encode());
 
         Ok(Self {
             announce: String::from_utf8(announce.to_vec())
                 .map_err(|_| TorrentError::InvalidMetadata)?,
             info,
+            info_hash,
         })
     }
 }
@@ -81,4 +85,12 @@ impl<'a> TryFrom<&Value<'a>> for Info {
             pieces: pieces.chunks(20).map(|chunk| chunk.to_vec()).collect(),
         })
     }
+}
+
+fn compute_hash(bytes: &[u8]) -> Vec<u8> {
+    let mut hasher = Sha1::new();
+    hasher.update(bytes);
+    let result = hasher.finalize();
+
+    result.to_vec()
 }
