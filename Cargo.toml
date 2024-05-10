@@ -1,0 +1,9 @@
+[package]
+name = "btget"
+version = "0.0.0"
+description = "It's like wget, but for BitTorrent!"
+repository = "https://github.com/fvilers/btget"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[dependencies]
