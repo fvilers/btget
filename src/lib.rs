@@ -1,12 +1,14 @@
 use error::RunError;
 use std::fs;
 
+mod bencode;
 mod error;
 
 pub fn run(file_name: String) -> Result<(), RunError> {
-    let content = fs::read(&file_name)?;
+    let content = fs::read(file_name)?;
+    let metadata = bencode::decode(&content)?;
 
-    println!("Read {} bytes from {file_name}", content.len());
+    println!("{metadata:?}");
 
     Ok(())
 }
