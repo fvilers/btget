@@ -1,5 +1,5 @@
 pub use self::{error::DecodeError, value::Value};
-use std::str;
+use std::{collections::BTreeMap, str};
 
 mod error;
 mod value;
@@ -17,6 +17,7 @@ fn decode_bytes(source: &[u8]) -> DecodeResult {
         Some(b'i') => decode_integer(&source[1..]).map(inc_offset),
         Some(byte) if byte.is_ascii_digit() => decode_byte_string(source),
         Some(b'l') => decode_list(&source[1..]).map(inc_offset),
+        Some(b'd') => decode_dictionary(&source[1..]).map(inc_offset),
         Some(byte) => Err(DecodeError::UnexpectedByte((*byte, 0))),
         None => Err(DecodeError::UnexpectedEndOfFile),
     }
@@ -80,8 +81,33 @@ fn decode_list(source: &[u8]) -> DecodeResult {
     }
 }
 
+fn decode_dictionary(source: &[u8]) -> DecodeResult {
+    let mut index = 0;
+    let mut values = BTreeMap::new();
+
+    loop {
+        match source.get(index) {
+            Some(b'e') => break Ok((Value::Dictionary(values), index + 1)),
+            Some(_) => {
+                let (key, offset) = decode_byte_string(&source[index..])?;
+                index += offset;
+
+                let (value, offset) = decode_bytes(&source[index..])?;
+                index += offset;
+
+                if let Value::ByteString(k) = key {
+                    values.insert(String::from_utf8_lossy(k), value);
+                }
+            }
+            None => break Err(DecodeError::UnexpectedEndOfFile),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use super::*;
 
     #[test]
@@ -192,6 +218,26 @@ mod tests {
             Value::List(Vec::from([
                 Value::ByteString("spam".as_bytes()),
                 Value::Integer(42)
+            ]))
+        );
+    }
+
+    #[test]
+    fn decode_bytes_should_return_an_error_for_dictionary_unexpected_eof() {
+        let result = decode_bytes("d".as_bytes()).unwrap_err();
+
+        assert_eq!(result, DecodeError::UnexpectedEndOfFile);
+    }
+
+    #[test]
+    fn decode_bytes_should_return_the_dictionary() {
+        let (result, _) = decode_bytes("d3:bar4:spam3:fooi42ee".as_bytes()).unwrap();
+
+        assert_eq!(
+            result,
+            Value::Dictionary(BTreeMap::from([
+                (Cow::from("bar"), Value::ByteString("spam".as_bytes())),
+                (Cow::from("foo"), Value::Integer(42))
             ]))
         );
     }
