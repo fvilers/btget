@@ -1,9 +1,12 @@
 use error::RunError;
+use std::fs;
 
 mod error;
 
 pub fn run(file_name: String) -> Result<(), RunError> {
-    println!("File name: {file_name}");
+    let content = fs::read(&file_name)?;
+
+    println!("Read {} bytes from {file_name}", content.len());
 
     Ok(())
 }

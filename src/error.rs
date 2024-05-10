@@ -1,12 +1,28 @@
-use std::{error, fmt};
+use std::{error, fmt, io};
 
 #[derive(Debug)]
-pub struct RunError;
+pub enum RunError {
+    IO(io::Error),
+}
 
-impl error::Error for RunError {}
+impl error::Error for RunError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match self {
+            Self::IO(e) => Some(e),
+        }
+    }
+}
 
 impl fmt::Display for RunError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "An error has occurred")
+        match self {
+            Self::IO(e) => e.fmt(f),
+        }
+    }
+}
+
+impl From<io::Error> for RunError {
+    fn from(value: io::Error) -> Self {
+        Self::IO(value)
     }
 }
