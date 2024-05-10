@@ -1,2 +1,4 @@
-#[derive(Debug)]
-pub enum Value {}
+#[derive(Debug, PartialEq)]
+pub enum Value {
+    Integer(isize),
+}
