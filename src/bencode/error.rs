@@ -6,6 +6,7 @@ pub enum DecodeError {
     UnexpectedEndOfFile,
     Utf8(str::Utf8Error),
     ParseInt(num::ParseIntError),
+    InvalidByteStringLength((usize, usize)),
 }
 
 impl error::Error for DecodeError {
@@ -15,6 +16,7 @@ impl error::Error for DecodeError {
             Self::UnexpectedEndOfFile => None,
             Self::Utf8(e) => Some(e),
             Self::ParseInt(e) => Some(e),
+            Self::InvalidByteStringLength(_) => None,
         }
     }
 }
@@ -28,6 +30,9 @@ impl fmt::Display for DecodeError {
             Self::UnexpectedEndOfFile => write!(f, "Unexpected end of file"),
             Self::Utf8(e) => e.fmt(f),
             Self::ParseInt(e) => e.fmt(f),
+            Self::InvalidByteStringLength((length, index)) => {
+                write!(f, "Invalid byte string length ({length}) at index {index}")
+            }
         }
     }
 }
